@@ -38,12 +38,13 @@ export const invoicesRoutes: FastifyPluginAsync = async (server) => {
   });
 
   server.get<{ Params: { id: string } }>("/:id", async (req, reply) => {
+    const tenant = currentTenant();
     const pool = getPool();
     const result = await pool.query(
       `SELECT id, tenant_id, customer_id, subscription_id, total_minor, currency, status, created_at
        FROM invoices
-       WHERE id = $1`,
-      [req.params.id]
+       WHERE id = $1 AND tenant_id = $2`,
+      [req.params.id, tenant?.tenantId]
     );
     if (result.rows.length === 0) {
       return reply.code(404).send({ error: "not found" });
