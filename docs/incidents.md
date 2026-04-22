@@ -47,7 +47,7 @@ not enumerate other tenants' UUIDs — the leak path was a single CSM in our own
 support tool who was investigating two tenants in parallel.
 
 **Action items:**
-- [x] Hotfix landed (commit `f4a2c1e`).
+- [x] Hotfix landed (commit `f4f0a59`).
 - [ ] Add a lint rule that flags raw SQL containing `WHERE id = ` without
       a sibling `tenant_id` predicate.
 - [ ] Audit all other routes for the same pattern. Audit was started but not
