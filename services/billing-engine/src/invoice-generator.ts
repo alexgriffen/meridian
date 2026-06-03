@@ -2,6 +2,7 @@ import { getPool, withTransaction } from "@meridian/db";
 import { addMoney, calculateTax } from "@meridian/billing-core";
 import { withSpan } from "@meridian/otel";
 import type { Money } from "@meridian/shared-types";
+import { enqueueWebhook } from "./webhook-enqueue.js";
 
 interface CycleResult {
   subscriptions_processed: number;
@@ -76,11 +77,12 @@ async function generateInvoiceForSubscription(sub: SubRow): Promise<void> {
     const tax = calculateTax(subtotal, sub.tax_region);
     const total = addMoney(subtotal, tax);
 
-    await client.query(
+    const invoiceResult = await client.query<{ id: string }>(
       `INSERT INTO invoices
-        (id, tenant_id, customer_id, subscription_id, subtotal_minor, tax_minor,
+        (tenant_id, customer_id, subscription_id, subtotal_minor, tax_minor,
          total_minor, currency, status, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, 'open', NOW())`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', NOW())
+       RETURNING id`,
       [
         sub.tenant_id,
         sub.customer_id,
@@ -91,6 +93,7 @@ async function generateInvoiceForSubscription(sub: SubRow): Promise<void> {
         total.currency,
       ]
     );
+    const invoiceId = invoiceResult.rows[0]?.id;
 
     await client.query(
       `UPDATE subscriptions
@@ -99,5 +102,21 @@ async function generateInvoiceForSubscription(sub: SubRow): Promise<void> {
        WHERE id = $1`,
       [sub.id, plan.interval_days]
     );
+
+    await enqueueWebhook(client, {
+      tenantId: sub.tenant_id,
+      eventType: "invoice.created",
+      payload: {
+        id: invoiceId,
+        tenant_id: sub.tenant_id,
+        customer_id: sub.customer_id,
+        subscription_id: sub.id,
+        subtotal_minor: subtotal.amount_minor,
+        tax_minor: tax.amount_minor,
+        total_minor: total.amount_minor,
+        currency: total.currency,
+        status: "open",
+      },
+    });
   });
 }
