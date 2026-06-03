@@ -44,17 +44,55 @@ Meridian is the billing and revenue platform powering subscription, usage-based,
 | `docs/incidents.md` | Post-incident review log. | `@oncall` |
 | `ops/tickets.json` | Open customer-reported issues, code-area annotated. | `@support-eng` |
 
-## Development
+## Quickstart (alpha)
+
+```bash
+cp .env.example .env
+# Grab a webhook destination URL from https://webhook.site and paste it
+# into .env as WEBHOOK_URL — you'll watch invoice events arrive there.
+
+docker compose up --build
+```
+
+That brings up postgres, runs migrations, seeds a tenant, and starts all four
+services. The api-gateway is exposed on `http://localhost:4000`.
+
+### Demo loop
+
+```bash
+TENANT=00000000-0000-4000-8000-000000000001
+CUSTOMER=00000000-0000-4000-8000-000000000010
+
+# 1) Post a usage event (lands in usage_events outbox)
+curl -X POST http://localhost:4000/v1/usage \
+  -H "X-Tenant-Id: $TENANT" -H "content-type: application/json" \
+  -d "{\"customer_id\":\"$CUSTOMER\",\"metric\":\"api_calls\",\"quantity\":42}"
+
+# 2) The seeded subscription's period ends ~1 minute after seed runs.
+#    billing-engine generates an invoice, enqueues a webhook delivery,
+#    and webhook-dispatcher POSTs it to your WEBHOOK_URL.
+
+# 3) Watch invoices appear
+curl http://localhost:4000/v1/invoices -H "X-Tenant-Id: $TENANT"
+
+# 4) Watch usage rollups
+docker compose exec postgres psql -U meridian -c \
+  "SELECT * FROM daily_usage_rollups;"
+```
+
+## Development without docker
 
 ```bash
 pnpm install
-pnpm -r build
+pnpm -r typecheck
 pnpm -r test
 ```
 
-Each service can be run individually:
+Individual services (requires a running postgres and `DATABASE_URL` exported):
 
 ```bash
+pnpm --filter @meridian/scripts migrate
+pnpm --filter @meridian/scripts seed
 pnpm --filter @meridian/api-gateway dev
 pnpm --filter @meridian/billing-engine dev
 pnpm --filter @meridian/webhook-dispatcher dev
