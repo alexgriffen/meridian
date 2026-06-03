@@ -4,6 +4,7 @@ import { tenantPlugin } from "./tenant.js";
 import { subscriptionsRoutes } from "./routes/subscriptions.js";
 import { invoicesRoutes } from "./routes/invoices.js";
 import { customersRoutes } from "./routes/customers.js";
+import { usageRoutes } from "./routes/usage.js";
 
 export async function buildServer() {
   const server = Fastify({
@@ -20,6 +21,7 @@ export async function buildServer() {
   await server.register(subscriptionsRoutes, { prefix: "/v1/subscriptions" });
   await server.register(invoicesRoutes, { prefix: "/v1/invoices" });
   await server.register(customersRoutes, { prefix: "/v1/customers" });
+  await server.register(usageRoutes, { prefix: "/v1/usage" });
 
   return server;
 }

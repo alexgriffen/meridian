@@ -9,9 +9,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@meridian/billing-engine": "workspace:*",
     "@meridian/db": "workspace:*",
     "@meridian/otel": "workspace:*",
     "@meridian/shared-types": "workspace:*",

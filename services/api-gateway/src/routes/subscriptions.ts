@@ -11,6 +11,17 @@ const ListQuery = z.object({
 
 const GetParams = z.object({ id: z.string().uuid() });
 
+const CreateBody = z.object({
+  customer_id: z.string().uuid(),
+  plan_id: z.string().min(1),
+  discount_pct: z.number().min(0).max(100).optional(),
+});
+
+const PlanChangeBody = z.object({
+  new_plan_id: z.string().min(1),
+  effective_at: z.string().datetime().optional(),
+});
+
 export const subscriptionsRoutes: FastifyPluginAsync = async (server) => {
   server.get("/", async (req) => {
     const tenant = currentTenant();
@@ -58,5 +69,51 @@ export const subscriptionsRoutes: FastifyPluginAsync = async (server) => {
       return reply.code(404).send({ error: "not found" });
     }
     return result.rows[0];
+  });
+
+  server.post("/", async (req, reply) => {
+    const tenant = currentTenant();
+    if (!tenant) return reply.code(401).send({ error: "no tenant" });
+    const body = CreateBody.parse(req.body);
+    const pool = getPool();
+
+    const planRes = await pool.query<{ interval_days: number }>(
+      `SELECT interval_days FROM plans WHERE id = $1`,
+      [body.plan_id]
+    );
+    const plan = planRes.rows[0];
+    if (!plan) return reply.code(400).send({ error: "unknown plan_id" });
+
+    const result = await pool.query<{ id: string }>(
+      `INSERT INTO subscriptions
+         (tenant_id, customer_id, plan_id,
+          current_period_start, current_period_end, status, discount_pct)
+       VALUES ($1, $2, $3, NOW(), NOW() + ($4 || ' days')::interval, 'active', $5)
+       RETURNING id`,
+      [
+        tenant.tenantId,
+        body.customer_id,
+        body.plan_id,
+        plan.interval_days,
+        body.discount_pct ?? 0,
+      ]
+    );
+    return reply.code(201).send({ id: result.rows[0]?.id });
+  });
+
+  server.post<{ Params: { id: string } }>("/:id/plan-change", async (req, reply) => {
+    const tenant = currentTenant();
+    if (!tenant) return reply.code(401).send({ error: "no tenant" });
+    const body = PlanChangeBody.parse(req.body);
+
+    // Lazy import so the gateway image doesn't need billing-engine source at build time.
+    const { changePlan } = await import("@meridian/billing-engine/plan-change");
+    const result = await changePlan({
+      tenantId: tenant.tenantId,
+      subscriptionId: req.params.id,
+      newPlanId: body.new_plan_id,
+      effectiveAt: body.effective_at ? new Date(body.effective_at) : undefined,
+    });
+    return result;
   });
 };
