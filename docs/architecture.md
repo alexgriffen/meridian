@@ -71,9 +71,24 @@ Code review for *any* new query MUST verify the `tenant_id` filter.
 
 ## Usage event flow
 
-1. Tenant POSTs `/v1/usage` → api-gateway publishes to Kafka topic `usage.events.v1`.
+1. Tenant POSTs `/v1/usage` → api-gateway writes to the ingest layer.
 2. usage-aggregator consumes, upserts `daily_usage_rollups` with `ON CONFLICT DO UPDATE`.
 3. billing-engine reads rollups at invoice generation time.
+
+### Ingest layer
+
+The aggregator can ingest from two sources, switched by `USAGE_INGEST`:
+
+- **`outbox`** (alpha) — events land in a `usage_events` postgres table; the
+  worker polls and claims batches. Zero infra cost, fits the small-tenant
+  alpha environment.
+- **`kafka`** (production) — events go to `usage.events.v1`; the worker is a
+  Kafka consumer with manual offset commits.
+
+We intentionally started on the outbox to avoid running Kafka before we needed
+it. The graduation criterion is throughput: when sustained events/sec exceeds
+what a single postgres can comfortably absorb on writes (rough target: 500/s),
+flip `USAGE_INGEST=kafka` and run migration `down_0005` to drop the outbox.
 
 ## Why these choices
 
