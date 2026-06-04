@@ -7,8 +7,11 @@ services:
       POSTGRES_USER: meridian
       POSTGRES_PASSWORD: meridian
       POSTGRES_DB: meridian
+    # Host port 5433 to avoid collisions with other local postgres containers
+    # (we have one on 5432 from a sibling project). Inside the compose network
+    # services still talk to `postgres:5432`.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - meridian_pg_data:/var/lib/postgresql/data
     healthcheck:
