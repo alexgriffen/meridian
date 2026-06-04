@@ -1,0 +1,78 @@
+name: synthetic-traffic
+
+# Generates a steady, realistic-ish signal against the public Meridian alpha so
+# that downstream observers (PlayerZero, Grafana, etc.) have something to chew
+# on outside of demo-driven manual curls.
+#
+# What it does each run:
+#  - 5-15 mixed usage events (api_calls dominant, with storage/compute/email mix)
+#  - 1-in-5 chance of POSTing a new subscription
+#  - 1-in-10 chance of triggering a plan change on the seeded subscription
+#  - Always GETs /v1/subscriptions and /v1/invoices to exercise read paths
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+env:
+  API_URL: https://meridian-gateway.fly.dev
+  TENANT_ID: 00000000-0000-4000-8000-000000000001
+  CUSTOMER_ID: 00000000-0000-4000-8000-000000000010
+  SUBSCRIPTION_ID: 00000000-0000-4000-8000-000000000020
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Usage events
+        run: |
+          METRICS=(api_calls api_calls api_calls api_calls storage_gb compute_seconds emails_sent)
+          COUNT=$((RANDOM % 11 + 5))
+          echo "posting $COUNT usage events"
+          for _ in $(seq 1 $COUNT); do
+            metric=${METRICS[$RANDOM % ${#METRICS[@]}]}
+            qty=$((RANDOM % 250 + 1))
+            curl -sS -X POST "$API_URL/v1/usage" \
+              -H "X-Tenant-Id: $TENANT_ID" \
+              -H "content-type: application/json" \
+              -d "{\"customer_id\":\"$CUSTOMER_ID\",\"metric\":\"$metric\",\"quantity\":$qty}" \
+              -o /dev/null -w "  %{http_code} $metric=$qty\n"
+            sleep 1
+          done
+
+      - name: Maybe create a new subscription
+        run: |
+          if [ $((RANDOM % 5)) -eq 0 ]; then
+            echo "creating starter subscription"
+            curl -sS -X POST "$API_URL/v1/subscriptions" \
+              -H "X-Tenant-Id: $TENANT_ID" \
+              -H "content-type: application/json" \
+              -d "{\"customer_id\":\"$CUSTOMER_ID\",\"plan_id\":\"plan_starter\"}" \
+              -w "\n  status: %{http_code}\n"
+          else
+            echo "skipping subscription create this cycle"
+          fi
+
+      - name: Maybe trigger a plan change
+        run: |
+          if [ $((RANDOM % 10)) -eq 0 ]; then
+            NEW_PLAN=plan_starter
+            [ $((RANDOM % 2)) -eq 0 ] && NEW_PLAN=plan_enterprise
+            echo "changing plan on seeded subscription to $NEW_PLAN"
+            curl -sS -X POST "$API_URL/v1/subscriptions/$SUBSCRIPTION_ID/plan-change" \
+              -H "X-Tenant-Id: $TENANT_ID" \
+              -H "content-type: application/json" \
+              -d "{\"new_plan_id\":\"$NEW_PLAN\"}" \
+              -w "\n  status: %{http_code}\n"
+          else
+            echo "skipping plan change this cycle"
+          fi
+
+      - name: Read paths
+        run: |
+          curl -sS "$API_URL/healthz" -w "\n  /healthz %{http_code}\n"
+          curl -sS "$API_URL/v1/subscriptions" -H "X-Tenant-Id: $TENANT_ID" \
+            -o /dev/null -w "  /v1/subscriptions %{http_code}\n"
+          curl -sS "$API_URL/v1/invoices" -H "X-Tenant-Id: $TENANT_ID" \
+            -o /dev/null -w "  /v1/invoices %{http_code}\n"
