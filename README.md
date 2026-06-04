@@ -35,6 +35,7 @@ Meridian is the billing and revenue platform powering subscription, usage-based,
 | `services/billing-engine` | Invoice generation, proration, plan changes. Source of truth for amounts owed. | `@billing-core` |
 | `services/webhook-dispatcher` | Async delivery of customer-facing webhooks with retries and DLQ. | `@platform-api` |
 | `services/usage-aggregator` | Python service that consumes raw usage events and produces daily aggregates. | `@data-platform` |
+| `services/canary` | End-to-end canary — exercises the public API on a steady cadence so SLO/observability tooling has a baseline runtime signal. | `@platform-api` |
 | `packages/shared-types` | Cross-service TypeScript types and Zod schemas. | `@platform-api` |
 | `packages/db` | Postgres client, query builders, migration runner. | `@platform-api` |
 | `packages/otel` | OpenTelemetry tracer + metric setup. | `@observability` |
@@ -54,7 +55,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-That brings up postgres, runs migrations, seeds a tenant, and starts all four
+That brings up postgres, runs migrations, seeds a tenant, and starts all five
 services. The api-gateway is exposed on `http://localhost:4000`.
 
 ### Demo loop
@@ -96,6 +97,7 @@ pnpm --filter @meridian/scripts seed
 pnpm --filter @meridian/api-gateway dev
 pnpm --filter @meridian/billing-engine dev
 pnpm --filter @meridian/webhook-dispatcher dev
+pnpm --filter @meridian/canary dev
 cd services/usage-aggregator && python -m usage_aggregator
 ```
 
