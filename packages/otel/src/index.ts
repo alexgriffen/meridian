@@ -3,12 +3,26 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 
-export function initTelemetry(serviceName: string): NodeSDK {
+/**
+ * Initialise OpenTelemetry. Returns the SDK handle or null when disabled.
+ *
+ * Reads from env:
+ *   OTEL_SDK_DISABLED            — "true" to disable entirely
+ *   OTEL_EXPORTER_OTLP_ENDPOINT  — base OTLP URL (the SDK appends /v1/traces)
+ *   OTEL_EXPORTER_OTLP_HEADERS   — e.g. "Authorization=Basic <base64>"
+ */
+export function initTelemetry(serviceName: string): NodeSDK | null {
+  if (process.env.OTEL_SDK_DISABLED?.toLowerCase() === "true") {
+    return null;
+  }
+  if (!process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()) {
+    return null;
+  }
   const sdk = new NodeSDK({
     serviceName,
-    traceExporter: new OTLPTraceExporter({
-      url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://otel-collector:4318/v1/traces",
-    }),
+    // Construct the exporter with no args so it picks endpoint + headers up
+    // from OTEL_EXPORTER_OTLP_* env vars per the OTel spec.
+    traceExporter: new OTLPTraceExporter(),
     instrumentations: [getNodeAutoInstrumentations()],
   });
   sdk.start();

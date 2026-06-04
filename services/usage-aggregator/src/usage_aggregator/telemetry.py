@@ -18,6 +18,8 @@ def init_telemetry(service_name: str) -> None:
         return
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    exporter = OTLPSpanExporter(endpoint=endpoint)
+    # Let OTLPSpanExporter pick up endpoint + headers from OTEL_EXPORTER_OTLP_*
+    # env vars per the OTel spec (it appends /v1/traces automatically).
+    exporter = OTLPSpanExporter()
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
