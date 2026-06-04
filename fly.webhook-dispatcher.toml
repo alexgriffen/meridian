@@ -1,0 +1,17 @@
+# Polls webhook_deliveries and POSTs to customer endpoints. Internal-only.
+app = "meridian-webhooks"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "services/webhook-dispatcher/Dockerfile"
+
+[env]
+  POLL_INTERVAL_MS = "3000"
+  BATCH_SIZE = "25"
+  MAX_ATTEMPTS = "8"
+  LOG_LEVEL = "info"
+  OTEL_SDK_DISABLED = "true"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

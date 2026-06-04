@@ -1,0 +1,16 @@
+# Python worker that drains the usage_events outbox into daily_usage_rollups.
+app = "meridian-usage"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "services/usage-aggregator/Dockerfile"
+
+[env]
+  USAGE_INGEST = "outbox"
+  OUTBOX_POLL_INTERVAL_SEC = "2.0"
+  OUTBOX_BATCH_SIZE = "50"
+  OTEL_SDK_DISABLED = "true"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
