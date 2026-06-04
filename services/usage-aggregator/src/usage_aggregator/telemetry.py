@@ -11,12 +11,13 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
 def init_telemetry(service_name: str) -> None:
+    if os.environ.get("OTEL_SDK_DISABLED", "").lower() == "true":
+        return
+    endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "").strip()
+    if not endpoint:
+        return
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    exporter = OTLPSpanExporter(
-        endpoint=os.environ.get(
-            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318/v1/traces"
-        )
-    )
+    exporter = OTLPSpanExporter(endpoint=endpoint)
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
