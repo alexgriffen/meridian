@@ -4,13 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      service:
-        description: "Only deploy this service (or 'all')"
-        required: false
-        default: "all"
-        type: choice
-        options: [all, api-gateway, billing-engine, webhook-dispatcher, usage-aggregator]
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -22,19 +15,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: api-gateway,        toml: fly.api-gateway.toml }
-          - { name: billing-engine,     toml: fly.billing-engine.toml }
-          - { name: webhook-dispatcher, toml: fly.webhook-dispatcher.toml }
-          - { name: usage-aggregator,   toml: fly.usage-aggregator.toml }
+          - name: api-gateway
+            toml: fly.api-gateway.toml
+          - name: billing-engine
+            toml: fly.billing-engine.toml
+          - name: webhook-dispatcher
+            toml: fly.webhook-dispatcher.toml
+          - name: usage-aggregator
+            toml: fly.usage-aggregator.toml
     name: deploy / ${{ matrix.name }}
-    if: |
-      github.event_name != 'workflow_dispatch' ||
-      inputs.service == 'all' ||
-      inputs.service == matrix.name
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Deploy
+      - name: Deploy ${{ matrix.name }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: flyctl deploy -c ${{ matrix.toml }} --remote-only
