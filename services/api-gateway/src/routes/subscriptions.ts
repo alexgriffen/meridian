@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPool } from "@meridian/db";
-import { currentTenant } from "@meridian/db";
+import { getTenant } from "../tenant.js";
 
 const ListQuery = z.object({
   customer_id: z.string().uuid().optional(),
@@ -24,12 +24,12 @@ const PlanChangeBody = z.object({
 
 export const subscriptionsRoutes: FastifyPluginAsync = async (server) => {
   server.get("/", async (req) => {
-    const tenant = currentTenant();
+    const tenant = getTenant(req);
     const q = ListQuery.parse(req.query);
     const pool = getPool();
 
     const conditions: string[] = ["tenant_id = $1"];
-    const params: unknown[] = [tenant?.tenantId];
+    const params: unknown[] = [tenant.tenantId];
     if (q.customer_id) {
       params.push(q.customer_id);
       conditions.push(`customer_id = $${params.length}`);
@@ -72,8 +72,7 @@ export const subscriptionsRoutes: FastifyPluginAsync = async (server) => {
   });
 
   server.post("/", async (req, reply) => {
-    const tenant = currentTenant();
-    if (!tenant) return reply.code(401).send({ error: "no tenant" });
+    const tenant = getTenant(req);
     const body = CreateBody.parse(req.body);
     const pool = getPool();
 
@@ -101,12 +100,10 @@ export const subscriptionsRoutes: FastifyPluginAsync = async (server) => {
     return reply.code(201).send({ id: result.rows[0]?.id });
   });
 
-  server.post<{ Params: { id: string } }>("/:id/plan-change", async (req, reply) => {
-    const tenant = currentTenant();
-    if (!tenant) return reply.code(401).send({ error: "no tenant" });
+  server.post<{ Params: { id: string } }>("/:id/plan-change", async (req) => {
+    const tenant = getTenant(req);
     const body = PlanChangeBody.parse(req.body);
 
-    // Lazy import so the gateway image doesn't need billing-engine source at build time.
     const { changePlan } = await import("@meridian/billing-engine/plan-change");
     const result = await changePlan({
       tenantId: tenant.tenantId,

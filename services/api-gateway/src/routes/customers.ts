@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { getPool, currentTenant } from "@meridian/db";
+import { getPool } from "@meridian/db";
+import { getTenant } from "../tenant.js";
 
 const SearchQuery = z.object({
   email: z.string().email().optional(),
@@ -10,12 +11,12 @@ const SearchQuery = z.object({
 
 export const customersRoutes: FastifyPluginAsync = async (server) => {
   server.get("/", async (req) => {
-    const tenant = currentTenant();
+    const tenant = getTenant(req);
     const params_ = SearchQuery.parse(req.query);
     const pool = getPool();
 
     const conditions: string[] = ["tenant_id = $1"];
-    const params: unknown[] = [tenant?.tenantId];
+    const params: unknown[] = [tenant.tenantId];
     if (params_.email) {
       params.push(params_.email);
       conditions.push(`email = $${params.length}`);

@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
+import fp from "fastify-plugin";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 
 declare module "fastify" {
@@ -28,7 +29,7 @@ const JWKS =
       )
     : null;
 
-export const authPlugin: FastifyPluginAsync = async (server) => {
+const authPluginImpl: FastifyPluginAsync = async (server) => {
   server.addHook("onRequest", async (req, reply) => {
     if (req.url === "/healthz") return;
 
@@ -60,3 +61,5 @@ export const authPlugin: FastifyPluginAsync = async (server) => {
     }
   });
 };
+
+export const authPlugin = fp(authPluginImpl, { name: "auth-plugin" });

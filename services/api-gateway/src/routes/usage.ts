@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { getPool, currentTenant } from "@meridian/db";
+import { getPool } from "@meridian/db";
+import { getTenant } from "../tenant.js";
 
 const UsageEventInput = z.object({
   customer_id: z.string().uuid(),
@@ -15,9 +16,7 @@ const BatchInput = z.object({
 
 export const usageRoutes: FastifyPluginAsync = async (server) => {
   server.post("/", async (req, reply) => {
-    const tenant = currentTenant();
-    if (!tenant) return reply.code(401).send({ error: "no tenant" });
-
+    const tenant = getTenant(req);
     const body = parseBody(req.body);
     const pool = getPool();
 
@@ -39,7 +38,6 @@ export const usageRoutes: FastifyPluginAsync = async (server) => {
 };
 
 function parseBody(body: unknown): { events: z.infer<typeof UsageEventInput>[] } {
-  // Accept either { events: [...] } or a single event object.
   if (body && typeof body === "object" && "events" in body) {
     return BatchInput.parse(body);
   }
