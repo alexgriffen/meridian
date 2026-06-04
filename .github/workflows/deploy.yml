@@ -23,6 +23,8 @@ jobs:
             toml: fly.webhook-dispatcher.toml
           - name: usage-aggregator
             toml: fly.usage-aggregator.toml
+          - name: canary
+            toml: fly.canary.toml
     name: deploy / ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
