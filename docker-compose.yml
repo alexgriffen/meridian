@@ -1,0 +1,106 @@
+name: meridian-alpha
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: meridian
+      POSTGRES_PASSWORD: meridian
+      POSTGRES_DB: meridian
+    # Host port 5433 to avoid collisions with other local postgres containers
+    # (we have one on 5432 from a sibling project). Inside the compose network
+    # services still talk to `postgres:5432`.
+    ports:
+      - "5433:5432"
+    volumes:
+      - meridian_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meridian -d meridian"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+    command: ["migrate.ts"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+      WEBHOOK_URL: ${WEBHOOK_URL:-https://webhook.site/00000000-0000-0000-0000-000000000000}
+    command: ["seed.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+      AUTH_MODE: dev
+      LOG_LEVEL: info
+      PORT: "4000"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+    ports:
+      - "4000:4000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  billing-engine:
+    build:
+      context: .
+      dockerfile: services/billing-engine/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+      CYCLE_INTERVAL_MS: "15000"
+      LOG_LEVEL: info
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  webhook-dispatcher:
+    build:
+      context: .
+      dockerfile: services/webhook-dispatcher/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+      POLL_INTERVAL_MS: "2000"
+      LOG_LEVEL: info
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  usage-aggregator:
+    build:
+      context: .
+      dockerfile: services/usage-aggregator/Dockerfile
+    environment:
+      DATABASE_URL: postgres://meridian:meridian@postgres:5432/meridian
+      USAGE_INGEST: outbox
+      OUTBOX_POLL_INTERVAL_SEC: "1.5"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+volumes:
+  meridian_pg_data:

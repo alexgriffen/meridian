@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "description": "Open and recently-resolved customer-reported tickets, with engineering annotations. Synced nightly from Zendesk via ops/scripts/sync-tickets.ts.",
+    "last_synced": "2026-05-10T08:14:00Z"
+  },
+  "tickets": [
+    {
+      "id": "SUP-4821",
+      "external_id": "ZD-118432",
+      "tenant": "wave-comms",
+      "title": "Receiving 2-3 copies of every webhook for the last 6 weeks",
+      "status": "open",
+      "severity": "high",
+      "reporter": "ops@wave-comms.example",
+      "created_at": "2026-04-09T15:30:00Z",
+      "summary": "Customer is processing every invoice.paid event 2-3 times. Started 2026-02-22 based on their logs.",
+      "engineering_notes": "Looks like the same root cause as the 2026-04-08 incident. webhook-dispatcher claim query doesn't take a row lock. Open in PLAT-1102.",
+      "suspected_files": [
+        "services/webhook-dispatcher/src/dispatcher.ts"
+      ],
+      "owner": "@ksong"
+    },
+    {
+      "id": "SUP-4870",
+      "external_id": "ZD-119007",
+      "tenant": "northwind-saas",
+      "title": "Enterprise discount not applied on March invoices",
+      "status": "open",
+      "severity": "high",
+      "reporter": "finance@northwind-saas.example",
+      "created_at": "2026-04-15T09:12:00Z",
+      "summary": "Customer is on the Enterprise SKU with a 15% negotiated discount. Their March 2026 invoices reflect the full list price.",
+      "engineering_notes": "Discount column was added in migration 0004 in February. We've checked DB and the subscriptions row has discount_pct=15.00. Looks like billing-engine never reads the column. Counted ~40 affected tenants.",
+      "suspected_files": [
+        "services/billing-engine/src/invoice-generator.ts",
+        "packages/shared-types/src/billing.ts",
+        "db/migrations/0004_subscription_discounts.sql"
+      ],
+      "owner": "@billing-core"
+    },
+    {
+      "id": "SUP-4855",
+      "external_id": "ZD-118901",
+      "tenant": "atlas-fitness",
+      "title": "Customer support sees invoices from other tenants when looking up by ID",
+      "status": "resolved",
+      "severity": "critical",
+      "reporter": "internal-csm@meridian.example",
+      "created_at": "2026-02-22T14:01:00Z",
+      "resolved_at": "2026-02-22T14:12:00Z",
+      "summary": "Our own CSM, helping atlas-fitness, pasted an invoice UUID and got back details for a different tenant.",
+      "engineering_notes": "Hotfix landed in commit f4a2c1e (added tenant_id to WHERE). Post-incident audit of similar patterns was started but not completed. Suspect `/v1/customers/by-external-id` has the same issue.",
+      "suspected_files": [
+        "services/api-gateway/src/routes/invoices.ts",
+        "services/api-gateway/src/routes/subscriptions.ts",
+        "services/api-gateway/src/routes/customers.ts"
+      ],
+      "owner": "@platform-api"
+    },
+    {
+      "id": "SUP-4793",
+      "external_id": "ZD-118201",
+      "tenant": "kelp-software",
+      "title": "Usage metering is intermittently low — invoices look 5-10% under",
+      "status": "open",
+      "severity": "medium",
+      "reporter": "billing@kelp-software.example",
+      "created_at": "2026-03-30T11:45:00Z",
+      "summary": "Customer reconciles their internal API call logs against our daily_usage_rollups and sees ours running 5-10% low on some days, exact on others.",
+      "engineering_notes": "Spot-checked Kafka topic and producer-side counts match. Suspicion is on the consumer — possibly silently swallowing validation failures or DB errors. Aggregator catches all exceptions at debug level.",
+      "suspected_files": [
+        "services/usage-aggregator/src/usage_aggregator/aggregator.py",
+        "services/usage-aggregator/src/usage_aggregator/runner.py"
+      ],
+      "owner": "@data-platform"
+    },
+    {
+      "id": "SUP-4719",
+      "external_id": "ZD-117432",
+      "tenant": "various",
+      "title": "Plan downgrade credit is off by 1 cent",
+      "status": "open",
+      "severity": "low",
+      "reporter": "internal-cs",
+      "created_at": "2025-11-15T16:00:00Z",
+      "summary": "Customers occasionally see a credit that's 1 cent different from their own calculation. Most don't notice; the ones who do are usually fintech tenants.",
+      "engineering_notes": "Tracked in incidents.md 2025-11. prorate() rounds each side independently. Property-based testing would catch this.",
+      "suspected_files": [
+        "packages/billing-core/src/proration.ts"
+      ],
+      "owner": "@billing-core"
+    },
+    {
+      "id": "SUP-4901",
+      "external_id": "ZD-119412",
+      "tenant": "veriform",
+      "title": "Customer lookup by external_id returns customers from other tenants",
+      "status": "open",
+      "severity": "high",
+      "reporter": "engineering@veriform.example",
+      "created_at": "2026-04-28T19:22:00Z",
+      "summary": "Veriform's support tool pulls customers by external_id (their internal user UUIDs). On 2 occasions in the last week they got back rows for tenants that aren't theirs.",
+      "engineering_notes": "Almost certainly the same class of bug as SUP-4855. Not yet investigated.",
+      "suspected_files": [
+        "services/api-gateway/src/routes/customers.ts"
+      ],
+      "owner": "@platform-api"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.turbo
+**/__pycache__
+**/*.pyc
+**/.venv
+.git
+.github
+docs
+ops

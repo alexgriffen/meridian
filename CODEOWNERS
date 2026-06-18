@@ -1,0 +1,10 @@
+* @platform-api
+
+/services/billing-engine/                @billing-core @platform-api
+/packages/billing-core/                  @billing-core
+/services/usage-aggregator/              @data-platform
+/packages/otel/                          @observability
+/db/migrations/                          @platform-api @billing-core
+/docs/runbooks/                          @oncall
+/docs/incidents.md                       @oncall
+/ops/tickets.json                        @support-eng

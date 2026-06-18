@@ -1,0 +1,35 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api-gateway
+            toml: fly.api-gateway.toml
+          - name: billing-engine
+            toml: fly.billing-engine.toml
+          - name: webhook-dispatcher
+            toml: fly.webhook-dispatcher.toml
+          - name: usage-aggregator
+            toml: fly.usage-aggregator.toml
+          - name: canary
+            toml: fly.canary.toml
+    name: deploy / ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy ${{ matrix.name }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy -c ${{ matrix.toml }} --remote-only

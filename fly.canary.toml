@@ -1,0 +1,16 @@
+# End-to-end canary — generates synthetic traffic against the public API.
+# Internal-only, always-on.
+app = "meridian-canary"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "services/canary/Dockerfile"
+
+[env]
+  API_URL = "https://meridian-gateway.fly.dev"
+  INTERVAL_MS = "60000"
+  OTEL_SDK_DISABLED = "true"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

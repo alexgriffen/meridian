@@ -1,0 +1,27 @@
+[submodule "packages/shared-types"]
+	path = packages/shared-types
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-shared-types.git
+[submodule "packages/otel"]
+	path = packages/otel
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-otel.git
+[submodule "packages/db"]
+	path = packages/db
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-db.git
+[submodule "packages/billing-core"]
+	path = packages/billing-core
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-billing-core.git
+[submodule "services/api-gateway"]
+	path = services/api-gateway
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-api-gateway.git
+[submodule "services/billing-engine"]
+	path = services/billing-engine
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-billing-engine.git
+[submodule "services/webhook-dispatcher"]
+	path = services/webhook-dispatcher
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-webhook-dispatcher.git
+[submodule "services/usage-aggregator"]
+	path = services/usage-aggregator
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-usage-aggregator.git
+[submodule "services/canary"]
+	path = services/canary
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-canary.git
