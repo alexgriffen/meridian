@@ -43,6 +43,19 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  web:
+    build:
+      context: .
+      dockerfile: services/web/Dockerfile
+    environment:
+      PORT: "5173"
+      API_URL: http://api-gateway:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      api-gateway:
+        condition: service_started
+
   api-gateway:
     build:
       context: .

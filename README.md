@@ -12,6 +12,7 @@ Meridian is a **polyrepo**: each service and shared package lives in its own rep
 | Repo | Path | Description | Owner |
 |---|---|---|---|
 | [`meridian`](https://github.com/alexgriffen/meridian) | _(this repo)_ | Umbrella: submodules, infra, migrations, deploy. | `@platform-api` |
+| [`meridian-web`](https://github.com/alexgriffen/meridian-web) | `services/web` | Billing console (Vite + React) — browse/manage billing, post usage. | `@platform-api` |
 | [`meridian-api-gateway`](https://github.com/alexgriffen/meridian-api-gateway) | `services/api-gateway` | Public REST API. Auth, tenant resolution, request fanout. | `@platform-api` |
 | [`meridian-billing-engine`](https://github.com/alexgriffen/meridian-billing-engine) | `services/billing-engine` | Invoice generation, proration, plan changes. | `@billing-core` `@platform-api` |
 | [`meridian-webhook-dispatcher`](https://github.com/alexgriffen/meridian-webhook-dispatcher) | `services/webhook-dispatcher` | Async webhook delivery with retries + DLQ. | `@platform-api` |
@@ -73,8 +74,9 @@ Already cloned without `--recurse-submodules`? Run:
 git submodule update --init --recursive
 ```
 
-That brings up postgres, runs migrations, seeds a tenant, and starts all five
-services. The api-gateway is exposed on `http://localhost:4000`.
+That brings up postgres, runs migrations, seeds a tenant, and starts every
+service. The **billing console** is at `http://localhost:5173` and the
+api-gateway REST API at `http://localhost:4000`.
 
 ### Demo loop
 

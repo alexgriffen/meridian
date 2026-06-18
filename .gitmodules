@@ -25,3 +25,6 @@
 [submodule "services/canary"]
 	path = services/canary
 	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-canary.git
+[submodule "services/web"]
+	path = services/web
+	url = /Users/alexgriffen/foo/pzdemo/split/origins/meridian-web.git
