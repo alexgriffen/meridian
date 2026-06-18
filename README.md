@@ -96,10 +96,14 @@ curl -X POST http://localhost:4000/v1/usage \
 # 3) Watch invoices appear
 curl http://localhost:4000/v1/invoices -H "X-Tenant-Id: $TENANT"
 
-# 4) Watch usage rollups
+# 4) Watch usage rollups (via the API, or psql)
+curl http://localhost:4000/v1/usage/rollups -H "X-Tenant-Id: $TENANT"
 docker compose exec postgres psql -U meridian -c \
   "SELECT * FROM daily_usage_rollups;"
 ```
+
+Or just open the **billing console** at `http://localhost:5173` and drive the
+same loop from the UI (Usage → Invoices → Rollups).
 
 ## Development without docker
 

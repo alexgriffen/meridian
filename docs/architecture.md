@@ -10,9 +10,11 @@ to billing events in their own systems.
 ## Service map
 
 ```
-                  client requests
-                        │
-                        ▼
+        ┌─────────────────────┐
+        │   web (console)     │  React SPA; serves UI + reverse-proxies /api
+        └──────────┬──────────┘
+                   │  (other clients hit the REST API directly)
+                   ▼
               ┌─────────────────────┐
               │     api-gateway     │  Public REST, auth, tenant resolution
               └──────────┬──────────┘
