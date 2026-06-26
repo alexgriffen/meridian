@@ -1,0 +1,32 @@
+# Meridian billing console (Vite SPA). Public-facing.
+# server.mjs serves the built app and reverse-proxies /api -> the api-gateway,
+# so the browser talks to one origin (no CORS). Point API_URL at your deployed
+# gateway; override per-deploy with `fly secrets set API_URL=... -a meridian-web`.
+app = "meridian-web"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "services/web/Dockerfile"
+
+[env]
+  PORT = "5173"
+  API_URL = "https://meridian-gateway.fly.dev"
+
+[http_service]
+  internal_port = 5173
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "get"
+    path = "/"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
