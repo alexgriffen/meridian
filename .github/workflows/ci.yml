@@ -31,15 +31,26 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-playwright-
       - name: Install Chromium
         run: pnpm --filter @meridian/web exec playwright install --with-deps chromium
       - name: Run console functional tests
         run: pnpm --filter @meridian/web test:e2e
+      - name: Publish results to the run summary
+        if: ${{ !cancelled() }}
+        run: node services/web/tests/junit-summary.mjs services/web/test-results/junit.xml >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: services/web/playwright-report/
+          path: |
+            services/web/playwright-report/
+            services/web/test-results/
           retention-days: 7
 
   python:
