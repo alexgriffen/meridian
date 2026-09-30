@@ -146,3 +146,4 @@ New engineers should start with `docs/architecture.md` and then read at least on
 - SOC 2 Type II (2024 attestation in Vanta)
 - PCI DSS scope is limited to the `payments-vault` repo (separate)
 - All tenant data must be filtered by `tenant_id` at the query layer — see `docs/runbooks/tenant-isolation.md`
+
